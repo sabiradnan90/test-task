@@ -1,4 +1,4 @@
-name: CI/CD Pipeline using github-hosted runner
+name: CI/CD Pipeline 
 
 on:
   push:
