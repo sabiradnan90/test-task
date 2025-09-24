@@ -1,4 +1,4 @@
-name: CI/CD Pipeline 
+name: CI/CD Pipeline
 
 on:
   push:
@@ -16,15 +16,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Set up SSH agent
       - name: Set up SSH agent and load private key
         uses: webfactory/ssh-agent@v0.5.4
         with:
           ssh-private-key: ${{ secrets.PRIVATE_KEY }}
 
+      # Step 2: Debug SSH connectivity
+      - name: Debug SSH connectivity
+        run: |
+          ssh -v -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }} "whoami && pwd"
+
+      # Step 3: Build Docker image & run container on remote
       - name: Build image & run container on remote
         run: |
           ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }} "\
             set -e && \
+            mkdir -p ${{ env.REMOTE_PATH }} && \
             cd ${{ env.REMOTE_PATH }} && \
             docker build -t ${{ env.IMAGE_NAME }} . && \
             if [ \$(docker ps -q -f name=${{ env.CONTAINER_NAME }}) ]; then \
@@ -33,6 +41,7 @@ jobs:
             docker run -d -p ${{ env.SERVE_PORT }}:80 --name ${{ env.CONTAINER_NAME }} ${{ env.IMAGE_NAME }} \
           "
 
+      # Step 4: Test deployment on remote
       - name: Test deployment on remote
         run: |
           ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.USER_NAME }}@${{ secrets.SERVER_IP }} "\
